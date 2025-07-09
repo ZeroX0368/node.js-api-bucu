@@ -1,14 +1,39 @@
 const express = require('express');
 const axios = require('axios');
 const crypto = require('crypto');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// API key configuration
+const VALID_API_KEY = process.env.API_KEY || "dabibanban";
+
+// Middleware to verify API key
+function verifyApiKey(req, res, next) {
+  const apikey = req.query.apikey || req.headers['x-api-key'];
+  
+  if (!apikey) {
+    return res.status(401).json({
+      error: "API key required for authentication",
+      message: "Provide apikey as query parameter or x-api-key header"
+    });
+  }
+  
+  if (apikey !== VALID_API_KEY) {
+    return res.status(401).json({
+      error: "Invalid or expired api key."
+    });
+  }
+  
+  next();
+}
 
 // Nitro API endpoint
-app.get('/api/nitro', (req, res) => {
+app.get('/api/nitro', verifyApiKey, (req, res) => {
   const nitroCode = crypto.randomBytes(16).toString('hex').toUpperCase();
   res.json({
     code: `NITRO-${nitroCode}`,
@@ -18,7 +43,7 @@ app.get('/api/nitro', (req, res) => {
 });
 
 // Meme API endpoint
-app.get('/api/meme', async (req, res) => {
+app.get('/api/meme', verifyApiKey, async (req, res) => {
   try {
     const response = await axios.get('https://meme-api.com/gimme');
     res.json({
@@ -41,7 +66,7 @@ app.get('/api/meme', async (req, res) => {
 });
 
 // Pokemon API endpoint
-app.get('/api/pokemon', async (req, res) => {
+app.get('/api/pokemon', verifyApiKey, async (req, res) => {
   const { name } = req.query;
 
   if (!name) {
@@ -72,7 +97,7 @@ app.get('/api/pokemon', async (req, res) => {
 });
 
 // URL Shortener API endpoint
-app.get('/api/shorten', (req, res) => {
+app.get('/api/shorten', verifyApiKey, (req, res) => {
   const { url } = req.query;
 
   if (!url) {
@@ -98,7 +123,7 @@ app.get('/api/shorten', (req, res) => {
 });
 
 // Password Generator API endpoint
-app.get('/api/password', (req, res) => {
+app.get('/api/password', verifyApiKey, (req, res) => {
   const length = parseInt(req.query.length) || 12;
   const includeUppercase = req.query.uppercase !== 'false';
   const includeLowercase = req.query.lowercase !== 'false';
@@ -148,7 +173,7 @@ app.get('/api/password', (req, res) => {
 });
 
 // GitHub User API endpoint
-app.get('/api/github', async (req, res) => {
+app.get('/api/github', verifyApiKey, async (req, res) => {
   const { username } = req.query;
 
   if (!username) {
@@ -197,7 +222,7 @@ app.get('/api/github', async (req, res) => {
 });
 
 // Roblox User Info API endpoint
-app.get('/api/roblox', async (req, res) => {
+app.get('/api/roblox', verifyApiKey, async (req, res) => {
   const { username } = req.query;
 
   if (!username) {
@@ -254,6 +279,68 @@ app.get('/api/roblox', async (req, res) => {
     }
   }
 });
+
+// Function to create paste on sourcebin
+function createSourcebinPaste(content, title = "API Generated Paste") {
+  return new Promise((resolve, reject) => {
+    const postData = JSON.stringify({
+      files: [{
+        name: "paste.txt",
+        content: content,
+        languageId: 1
+      }],
+      title: title,
+      description: ""
+    });
+
+    const options = {
+      hostname: 'sourceb.in',
+      port: 443,
+      path: '/api/bins',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+        'User-Agent': 'SourcebinAPI/1.0'
+      }
+    };
+
+    const req = https.request(options, (response) => {
+      let data = '';
+
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      response.on('end', () => {
+        console.log('Response status:', response.statusCode);
+        console.log('Response data:', data);
+        
+        try {
+          if (response.statusCode === 200 || response.statusCode === 201) {
+            const result = JSON.parse(data);
+            if (result.key) {
+              resolve(`https://sourceb.in/${result.key}`);
+            } else {
+              reject(new Error(`No key in response: ${data}`));
+            }
+          } else {
+            reject(new Error(`HTTP ${response.statusCode}: ${data}`));
+          }
+        } catch (error) {
+          reject(new Error(`Failed to parse response: ${data}`));
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.write(postData);
+    req.end();
+  });
+}
 
 // Helper functions for generating random IDs and HWIDs
 function generateRandomHwidFluxus(length = 96) {
@@ -362,7 +449,7 @@ function generateRandomHwidEvon() {
 }
 
 // Link Generator API endpoint
-app.get('/api/gen', (req, res) => {
+app.get('/api/gen', verifyApiKey, (req, res) => {
   const { service } = req.query;
 
   if (!service) {
@@ -420,7 +507,7 @@ app.get('/api/gen', (req, res) => {
 });
 
 // Discord Server Info API endpoint
-app.get('/api/discord', async (req, res) => {
+app.get('/api/discord', verifyApiKey, async (req, res) => {
   const { code } = req.query;
 
   if (!code) {
@@ -485,6 +572,45 @@ app.get('/api/discord', async (req, res) => {
   }
 });
 
+// API endpoint to create paste on sourcebin
+app.get('/api/sourced', verifyApiKey, async (req, res) => {
+  const prompt = req.query.prompt;
+  const content = req.query.content;
+  const description = req.query.description;
+  const title = req.query.title || 'API Generated Paste';
+  
+  // Support multiple parameter names for content
+  const finalContent = content || prompt || description;
+  
+  if (!finalContent) {
+    return res.status(400).json({ 
+      error: 'Missing content parameter. Use "content", "prompt", or "description"' 
+    });
+  }
+
+  try {
+    const pasteUrl = await createSourcebinPaste(finalContent, title);
+    // Extract the paste key from the URL to create raw URL
+    const pasteKey = pasteUrl.split('/').pop();
+    const rawUrl = `https://cdn.sourceb.in/bins/${pasteKey}/0`;
+    
+    res.json({ 
+      success: true,
+      credits: 'bucu0368',
+      url: pasteUrl,
+      raw: rawUrl,
+      content: finalContent,
+      title: title
+    });
+  } catch (error) {
+    console.error('Error creating paste:', error);
+    res.status(500).json({ 
+      error: 'Failed to create paste',
+      message: error.message 
+    });
+  }
+});
+
 // Discord server redirect endpoint
 app.get('/server', (req, res) => {
   res.redirect('https://discord.gg/VvWgjhHyQN');
@@ -493,18 +619,23 @@ app.get('/server', (req, res) => {
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
-    message: 'API Server is running!',
+    message: 'bucu0368',
     endpoints: [
-      'GET /api/nitro - Generate Nitro codes',
-      'GET /api/meme - Get random memes',
-      'GET /api/pokemon?name= - Get Pokemon information',
-      'GET /api/shorten?url= - Shorten URLs',
-      'GET /api/password - Generate secure passwords',
-      'GET /api/github?username= - Get GitHub user info',
-      'GET /api/roblox?username= - Get Roblox user info',
-      'GET /api/discord?code= - Get Discord server info',
-      'GET /api/gen?service= - Generate service links',
+      'GET /api/nitro - Generate Nitro codes (requires API key)',
+      'GET /api/meme - Get random memes (requires API key)',
+      'GET /api/pokemon?name= - Get Pokemon information (requires API key)',
+      'GET /api/shorten?url= - Shorten URLs (requires API key)',
+      'GET /api/password - Generate secure passwords (requires API key)',
+      'GET /api/github?username= - Get GitHub user info (requires API key)',
+      'GET /api/roblox?username= - Get Roblox user info (requires API key)',
+      'GET /api/discord?code= - Get Discord server info (requires API key)',
+      'GET /api/gen?service= - Generate service links (requires API key)',
+      'GET /api/sourced - Create Sourcebin paste (requires API key)',
       'GET /server - Join Discord server'
+    ],
+    examples: [
+      'GET /api/sourced?content=Hello World&title=My Paste&apikey=here',
+      'GET /api/sourced?prompt=your_text_here&apikey=here'
     ]
   });
 });
@@ -521,4 +652,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('- GET /api/roblox?username=builderman');
   console.log('- GET /api/discord?code=VvWgjhHyQN');
   console.log('- GET /api/gen?service=fluxus');
+  console.log('- GET /api/sourced?content=test&apikey=dabibanban');
 });
