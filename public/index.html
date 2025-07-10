@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bucu0368 API</title>
+
+    <!-- Open Graph meta tags for rich link embeds -->
+    <meta property="og:title" content="bucu0368 API">
+    <meta property="og:description" content="Javascript Api Pro">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://api.bucu0368.com">
+    <meta property="og:image" content="https://api.bucu0368.com/generated-icon.png">
+    <meta property="og:site_name" content="bucu0368 API">
+
+    <!-- Twitter Card meta tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="bucu0368 API">
+    <meta name="twitter:description" content="Javascript Api Pro">
+    <meta name="twitter:image" content="https://api.bucu0368.com/generated-icon.png">
+
+    <!-- Additional meta tags -->
+    <meta name="description" content="Javascript Api Pro">
+    <meta name="author" content="bucu0368">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .endpoint {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        .endpoint-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .endpoint-body {
+            padding: 15px;
+            display: none;
+        }
+        .endpoint-body.active {
+            display: block;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .response {
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .method-get { border-left: 4px solid #28a745; }
+        .method-post { border-left: 4px solid #ffc107; }
+        .toggle-icon {
+            transition: transform 0.3s;
+        }
+        .toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 API Pro</h1>
+        <p>bucu0368 API!</p>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/nitro - Generate Nitro codes</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="text" id="nitro-apikey" placeholder="API Key (default: Apikey)" value="Apikey">
+                <button onclick="testNitro()">Test Nitro API</button>
+                <div class="response" id="nitro-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/pokemon?name= - Get Pokemon info</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="text" id="pokemon-name" placeholder="Pokemon name (e.g., pikachu)" value="pikachu">
+                <input type="text" id="pokemon-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testPokemon()">Test Pokemon API</button>
+                <div class="response" id="pokemon-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/github?username= - Get GitHub user info</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="text" id="github-username" placeholder="GitHub username (e.g., octocat)" value="octocat">
+                <input type="text" id="github-apikey" placeholder="API Key" value="APIKey">
+                <button onclick="testGithub()">Test GitHub API</button>
+                <div class="response" id="github-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/password - Generate secure password</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="number" id="password-length" placeholder="Length (default: 12)" value="12" min="4" max="128">
+                <label><input type="checkbox" id="password-uppercase" checked> Include Uppercase</label><br>
+                <label><input type="checkbox" id="password-lowercase" checked> Include Lowercase</label><br>
+                <label><input type="checkbox" id="password-numbers" checked> Include Numbers</label><br>
+                <label><input type="checkbox" id="password-symbols" checked> Include Symbols</label><br>
+                <input type="text" id="password-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testPassword()">Generate Password</button>
+                <div class="response" id="password-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/shorten?url= - URL Shortener</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="url" id="shorten-url" placeholder="URL to shorten (e.g., https://example.com)" value="https://example.com">
+                <input type="text" id="shorten-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testShorten()">Shorten URL</button>
+                <div class="response" id="shorten-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/sourced?content=&title= - Create Sourcebin paste</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <textarea id="sourced-content" placeholder="Content to paste" rows="4">Hello World! This is a test paste.</textarea>
+                <input type="text" id="sourced-title" placeholder="Paste title (optional)" value="API Test Paste">
+                <input type="text" id="sourced-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testSourced()">Create Paste</button>
+                <div class="response" id="sourced-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/meme - Get random memes</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="text" id="meme-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testMeme()">Get Random Meme</button>
+                <div class="response" id="meme-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/roblox?username= - Get Roblox user info</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="text" id="roblox-username" placeholder="Roblox username (e.g., builderman)" value="builderman">
+                <input type="text" id="roblox-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testRoblox()">Test Roblox API</button>
+                <div class="response" id="roblox-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/discord?code= - Get Discord server info</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="text" id="discord-code" placeholder="Discord invite code or URL (e.g., dyno)" value="dyno">
+                <input type="text" id="discord-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testDiscord()">Test Discord API</button>
+                <div class="response" id="discord-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/image?prompt=&width=512&height=512 - Generate AI images</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="text" id="image-prompt" placeholder="Image prompt (e.g., a beautiful landscape)" value="a beautiful landscape">
+                <input type="number" id="image-width" placeholder="Width (default: 1024)" value="1024" min="256" max="2048">
+                <input type="number" id="image-height" placeholder="Height (default: 1024)" value="1024" min="256" max="2048">
+                <select id="image-model">
+                    <option value="midjourney">Midjourney</option>
+                    <option value="flux">Flux</option>
+                    <option value="turbo">Turbo</option>
+                </select>
+                <label><input type="checkbox" id="image-enhance" checked> Enhance</label><br>
+                <label><input type="checkbox" id="image-nologo" checked> No Logo</label><br>
+                <input type="text" id="image-seed" placeholder="Seed (optional)">
+                <input type="text" id="image-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testImage()">Generate Image</button>
+                <div class="response" id="image-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/gen?service= - Generate service links</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <select id="gen-service">
+                    <option value="fluxus">Fluxus</option>
+                    <option value="arceus">Arceus</option>
+                    <option value="delta">Delta</option>
+                    <option value="deltaios">Delta iOS</option>
+                    <option value="cryptic">Cryptic</option>
+                    <option value="hydrogen">Hydrogen</option>
+                    <option value="vegax">Vega X</option>
+                    <option value="trigon">Trigon</option>
+                    <option value="cacti">Cacti</option>
+                    <option value="evon">Evon</option>
+                </select>
+                <input type="text" id="gen-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testGen()">Generate Link</button>
+                <div class="response" id="gen-response"></div>
+            </div>
+        </div>
+
+        <div class="endpoint method-get">
+            <div class="endpoint-header" onclick="toggleEndpoint(this)">
+                <span>GET /api/pastefy/bypass?url= - Bypass Pastefy and get content</span>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="endpoint-body">
+                <input type="text" id="pastefy-url" placeholder="Pastefy URL (e.g., https://pastefy.app/mFGLQfek)" value="https://pastefy.app/mFGLQfek">
+                <input type="text" id="pastefy-id" placeholder="Or just paste ID (e.g., mFGLQfek)" value="">
+                <input type="text" id="pastefy-apikey" placeholder="API Key" value="Apikey">
+                <button onclick="testPastefy()">Bypass Pastefy</button>
+                <div class="response" id="pastefy-response"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleEndpoint(header) {
+            const body = header.nextElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+
+            body.classList.toggle('active');
+            icon.classList.toggle('rotated');
+        }
+
+        async function makeRequest(url, elementId) {
+            try {
+                const response = await fetch(url);
+                const data = await response.text();
+                document.getElementById(elementId).textContent = data;
+            } catch (error) {
+                document.getElementById(elementId).textContent = `Error: ${error.message}`;
+            }
+        }
+
+        function testNitro() {
+            const apikey = document.getElementById('nitro-apikey').value;
+            const url = `/api/nitro?apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(url, 'nitro-response');
+        }
+
+        function testPokemon() {
+            const name = document.getElementById('pokemon-name').value;
+            const apikey = document.getElementById('pokemon-apikey').value;
+            const url = `/api/pokemon?name=${encodeURIComponent(name)}&apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(url, 'pokemon-response');
+        }
+
+        function testGithub() {
+            const username = document.getElementById('github-username').value;
+            const apikey = document.getElementById('github-apikey').value;
+            const url = `/api/github?username=${encodeURIComponent(username)}&apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(url, 'github-response');
+        }
+
+        function testPassword() {
+            const length = document.getElementById('password-length').value;
+            const uppercase = document.getElementById('password-uppercase').checked;
+            const lowercase = document.getElementById('password-lowercase').checked;
+            const numbers = document.getElementById('password-numbers').checked;
+            const symbols = document.getElementById('password-symbols').checked;
+            const apikey = document.getElementById('password-apikey').value;
+
+            const url = `/api/password?length=${length}&uppercase=${uppercase}&lowercase=${lowercase}&numbers=${numbers}&symbols=${symbols}&apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(url, 'password-response');
+        }
+
+        function testShorten() {
+            const url = document.getElementById('shorten-url').value;
+            const apikey = document.getElementById('shorten-apikey').value;
+            const requestUrl = `/api/shorten?url=${encodeURIComponent(url)}&apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(requestUrl, 'shorten-response');
+        }
+
+        function testSourced() {
+            const content = document.getElementById('sourced-content').value;
+            const title = document.getElementById('sourced-title').value;
+            const apikey = document.getElementById('sourced-apikey').value;
+            const url = `/api/sourced?content=${encodeURIComponent(content)}&title=${encodeURIComponent(title)}&apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(url, 'sourced-response');
+        }
+
+        function testMeme() {
+            const apikey = document.getElementById('meme-apikey').value;
+            const url = `/api/meme?apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(url, 'meme-response');
+        }
+
+        function testRoblox() {
+            const username = document.getElementById('roblox-username').value;
+            const apikey = document.getElementById('roblox-apikey').value;
+            const url = `/api/roblox?username=${encodeURIComponent(username)}&apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(url, 'roblox-response');
+        }
+
+        function testDiscord() {
+            const code = document.getElementById('discord-code').value;
+            const apikey = document.getElementById('discord-apikey').value;
+            const url = `/api/discord?code=${encodeURIComponent(code)}&apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(url, 'discord-response');
+        }
+
+        function testImage() {
+            const prompt = document.getElementById('image-prompt').value;
+            const width = document.getElementById('image-width').value;
+            const height = document.getElementById('image-height').value;
+            const model = document.getElementById('image-model').value;
+            const enhance = document.getElementById('image-enhance').checked;
+            const nologo = document.getElementById('image-nologo').checked;
+            const seed = document.getElementById('image-seed').value;
+            const apikey = document.getElementById('image-apikey').value;
+
+            let url = `/api/image?prompt=${encodeURIComponent(prompt)}&width=${width}&height=${height}&model=${model}&enhance=${enhance}&nologo=${nologo}&apikey=${encodeURIComponent(apikey)}`;
+
+            if (seed) {
+                url += `&seed=${encodeURIComponent(seed)}`;
+            }
+
+            makeRequest(url, 'image-response');
+        }
+
+        function testGen() {
+            const service = document.getElementById('gen-service').value;
+            const apikey = document.getElementById('gen-apikey').value;
+            const url = `/api/gen?service=${encodeURIComponent(service)}&apikey=${encodeURIComponent(apikey)}`;
+            makeRequest(url, 'gen-response');
+        }
+
+        function testPastefy() {
+            const url = document.getElementById('pastefy-url').value;
+            const id = document.getElementById('pastefy-id').value;
+            const apikey = document.getElementById('pastefy-apikey').value;
+
+            let requestUrl;
+            if (url && url.trim()) {
+                requestUrl = `/api/pastefy/bypass?url=${encodeURIComponent(url)}&apikey=${encodeURIComponent(apikey)}`;
+            } else if (id && id.trim()) {
+                requestUrl = `/api/pastefy/bypass?id=${encodeURIComponent(id)}&apikey=${encodeURIComponent(apikey)}`;
+            } else {
+                document.getElementById('pastefy-response').textContent = 'Please provide either a URL or paste ID';
+                return;
+            }
+
+            makeRequest(requestUrl, 'pastefy-response');
+        }
+    </script>
+</body>
+                  </html>
