@@ -6,15 +6,95 @@ const https = require('https');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Webhook configuration
+const WEBHOOK_URL = "https://discord.com/api/webhooks/1353511267889053767/AAHMBVG7vyD0SHEFK3pYf8sxsYS9_MEbQhINx_c1ASJbG_1fMrMlo8EvCaeGcF5wulcT";
+
+// Function to send webhook notification
+async function sendWebhookLog(endpoint, params = {}, responseData = null, isError = false) {
+  if (!WEBHOOK_URL) {
+    return; // Skip if webhook URL is not configured
+  }
+
+  try {
+    const embed = {
+      title: isError ? "❌ API Error Log" : "🚀 API Usage Log",
+      color: isError ? 0xff0000 : 0x00ff00,
+      fields: [
+        { name: "Endpoint", value: endpoint, inline: true },
+        { name: "Timestamp", value: new Date().toISOString(), inline: true }
+      ],
+      footer: { text: "bucu0368 API" }
+    };
+
+    // Add parameters if provided
+    if (Object.keys(params).length > 0) {
+      const paramText = Object.entries(params)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join('\n');
+      embed.fields.push({ name: "Parameters", value: paramText, inline: false });
+    }
+
+    // Add response data if provided
+    if (responseData) {
+      const responseText = JSON.stringify(responseData, null, 2);
+      // Discord embed field value limit is 1024 characters
+      const truncatedResponse = responseText.length > 1000 
+        ? responseText.substring(0, 1000) + "..." 
+        : responseText;
+      const fieldName = isError ? "Error Details" : "API Response";
+      embed.fields.push({ name: fieldName, value: `\`\`\`json\n${truncatedResponse}\n\`\`\``, inline: false });
+    }
+
+    await axios.post(WEBHOOK_URL, {
+      embeds: [embed]
+    });
+  } catch (error) {
+    console.error('Webhook log error:', error.message);
+  }
+}
+
+// Function to send error webhook notification
+async function sendErrorWebhook(endpoint, params = {}, error) {
+  const errorData = {
+    error: error.message || 'Unknown error',
+    stack: error.stack ? error.stack.substring(0, 1000) : 'No stack trace',
+    status: error.status || 500
+  };
+  
+  await sendWebhookLog(endpoint, params, errorData, true);
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static('public'));
+
+// Global error handler
+app.use((error, req, res, next) => {
+  console.error('Global error handler:', error);
+  
+  // Send error to webhook if user info is available
+  if (req.userInfo) {
+    const endpoint = req.path;
+    const params = { ...req.query };
+    delete params.apikey;
+    
+    sendErrorWebhook(endpoint, params, error);
+  }
+  
+  // Send error response
+  res.status(error.status || 500).json({
+    error: 'Internal server error',
+    message: error.message || 'Something went wrong'
+  });
+});
 
 // API key configuration
-const VALID_API_KEY = process.env.API_KEY || "dabibanban";
+const VALID_API_KEY = process.env.API_KEY || "bucu";
 
-// Middleware to verify API key
+// Middleware to verify API key and log usage
 function verifyApiKey(req, res, next) {
   const apikey = req.query.apikey || req.headers['x-api-key'];
+  const userIP = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'Unknown';
   
   if (!apikey) {
     return res.status(401).json({
@@ -23,11 +103,31 @@ function verifyApiKey(req, res, next) {
     });
   }
   
+  // Check if it's the master key
   if (apikey !== VALID_API_KEY) {
     return res.status(401).json({
-      error: "Invalid or expired api key."
+      error: "Invalid api key."
     });
   }
+  
+  // Capture response data for webhook logging
+  const originalJson = res.json;
+  res.json = function(data) {
+    // Log API usage with response data
+    const endpoint = req.path;
+    const params = { ...req.query };
+    delete params.apikey; // Remove API key from logged params
+    
+    // Check if response contains error
+    const isError = res.statusCode >= 400 || (data && data.error);
+    sendWebhookLog(endpoint, params, data, isError);
+    
+    // Call original json method
+    return originalJson.call(this, data);
+  };
+
+  // Store user info for error handling
+  req.userInfo = { userIP, apikey };
   
   next();
 }
@@ -506,6 +606,45 @@ app.get('/api/gen', verifyApiKey, (req, res) => {
   res.json({ result });
 });
 
+// Image Generation API endpoint
+app.get('/api/image', verifyApiKey, async (req, res) => {
+  try {
+    const { 
+      prompt, 
+      width = 1024, 
+      height = 1024, 
+      model = 'midjourney', 
+      nologo = true, 
+      private = false, 
+      enhance = true, 
+      seed 
+    } = req.query;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+
+    // Build the Pollinations AI URL
+    const baseUrl = 'https://image.pollinations.ai/prompt/';
+    const encodedPrompt = encodeURIComponent(prompt);
+    
+    let imageUrl = `${baseUrl}${encodedPrompt}?width=${width}&height=${height}&model=${model}&nologo=${nologo}&private=${private}&enhance=${enhance}`;
+    
+    if (seed) {
+      imageUrl += `&seed=${seed}`;
+    }
+
+    res.json({
+      image_url: imageUrl,
+      prompt: prompt,
+    });
+
+  } catch (error) {
+    console.error('Error generating image:', error);
+    res.status(500).json({ error: 'Failed to generate image' });
+  }
+});
+
 // Discord Server Info API endpoint
 app.get('/api/discord', verifyApiKey, async (req, res) => {
   const { code } = req.query;
@@ -572,6 +711,8 @@ app.get('/api/discord', verifyApiKey, async (req, res) => {
   }
 });
 
+
+
 // API endpoint to create paste on sourcebin
 app.get('/api/sourced', verifyApiKey, async (req, res) => {
   const prompt = req.query.prompt;
@@ -611,15 +752,88 @@ app.get('/api/sourced', verifyApiKey, async (req, res) => {
   }
 });
 
+// Helper function to extract paste ID from Pastefy URL
+function extractPasteId(url) {
+  if (url.startsWith('https://pastefy.app/')) {
+    return url.split('/').pop();
+  } else if (url.startsWith('pastefy.app/')) {
+    return url.split('/').pop();
+  } else {
+    return url;
+  }
+}
+
+// Helper function to get Pastefy content
+async function getPasteFyContent(pasteId) {
+  try {
+    const apiUrl = `https://pastefy.app/api/v2/paste/${pasteId}`;
+    const response = await axios.get(apiUrl);
+    const data = response.data;
+    
+    return {
+      success: true,
+      content: data.content || '',
+      title: data.title || 'N/A',
+      language: data.language || 'N/A',
+      created: data.created || 'N/A',
+      paste_id: pasteId
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.status === 404 ? 'Paste not found' : `Request failed: ${error.message}`,
+      paste_id: pasteId
+    };
+  }
+}
+
+// Pastefy bypass API endpoint
+app.get('/api/pastefy/bypass', verifyApiKey, async (req, res) => {
+  const { url, id } = req.query;
+  
+  let pasteId;
+  if (url) {
+    pasteId = extractPasteId(url);
+  } else if (id) {
+    pasteId = id;
+  } else {
+    return res.status(400).json({
+      success: false,
+      error: 'Please provide either "url" or "id" parameter'
+    });
+  }
+  
+  // Validate paste ID format
+  if (!pasteId || pasteId.length < 3) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid paste ID format'
+    });
+  }
+  
+  const result = await getPasteFyContent(pasteId);
+  
+  if (result.success) {
+    res.json(result);
+  } else {
+    res.status(404).json(result);
+  }
+});
+
 // Discord server redirect endpoint
 app.get('/server', (req, res) => {
   res.redirect('https://discord.gg/VvWgjhHyQN');
 });
 
-// Root endpoint
+// Root endpoint - serve the API testing interface
 app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/public/index.html');
+});
+
+// API documentation endpoint
+app.get('/api', (req, res) => {
   res.json({
-    message: 'bucu0368',
+    message: 'bucu0368 API Documentation',
     endpoints: [
       'GET /api/nitro - Generate Nitro codes (requires API key)',
       'GET /api/meme - Get random memes (requires API key)',
@@ -629,14 +843,23 @@ app.get('/', (req, res) => {
       'GET /api/github?username= - Get GitHub user info (requires API key)',
       'GET /api/roblox?username= - Get Roblox user info (requires API key)',
       'GET /api/discord?code= - Get Discord server info (requires API key)',
+      'GET /api/image?prompt= - Generate AI images (requires API key)',
       'GET /api/gen?service= - Generate service links (requires API key)',
       'GET /api/sourced - Create Sourcebin paste (requires API key)',
+      'GET /api/pastefy/bypass?url= - Bypass Pastefy and get content (requires API key)',
       'GET /server - Join Discord server'
     ],
     examples: [
       'GET /api/sourced?content=Hello World&title=My Paste&apikey=here',
-      'GET /api/sourced?prompt=your_text_here&apikey=here'
-    ]
+      'GET /api/pastefy/bypass?url=https://pastefy.app/mFGLQfek&apikey=here'
+    ],
+    authentication: {
+      required: true,
+      method: "API key",
+      parameter: "apikey (query parameter) or x-api-key (header)"
+    },
+    testInterface: 'Visit the root URL (/) to access the interactive API testing interface',
+    webhookLogging: 'API usage is logged to Discord webhook if WEBHOOK_URL environment variable is set'
   });
 });
 
@@ -651,6 +874,8 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('- GET /api/github?username=octocat');
   console.log('- GET /api/roblox?username=builderman');
   console.log('- GET /api/discord?code=VvWgjhHyQN');
+  console.log('- GET /api/image?prompt=a beautiful landscape');
   console.log('- GET /api/gen?service=fluxus');
-  console.log('- GET /api/sourced?content=test&apikey=dabibanban');
+  console.log('- GET /api/sourced?content=test&apikey=your_key');
+  console.log('- GET /api/pastefy/bypass?url=https://pastefy.app/mFGLQfek');
 });
